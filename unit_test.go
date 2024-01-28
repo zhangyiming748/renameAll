@@ -1,4 +1,4 @@
-package renameAll
+package main
 
 import "testing"
 
