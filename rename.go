@@ -2,40 +2,61 @@ package main
 
 import (
 	"fmt"
-	"github.com/zhangyiming748/GetFileInfo"
-	"github.com/zhangyiming748/renameAll/reg"
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 func init() {
-	SetLogLevel("Info")
+	SetLogLevel("Debug")
 }
 func main() {
-	root := "/Users/zen/Documents/柒柒音声/music"
-	pattern := "mp3"
-	replace(root, pattern)
+	root := "/mnt/f/large/GirlFriend4ever"
+	replace(root)
 	slog.Info("end")
 }
-func replace(root, pattern string) {
-	files := GetFileInfo.GetAllFileInfo(root, pattern)
+func replace(root string) {
+	files, err := getFiles(root)
+	if err != nil {
+		panic(err)
+	}
 	for _, file := range files {
-		slog.Debug(fmt.Sprintf("文件信息: %+v", file))
-		if has, substring := reg.F1(file.PurgeName); has {
-			slog.Info(fmt.Sprintf("前缀名 : %s", substring))
-			nName := strings.Replace(file.PurgeName, substring, "", 1)
-			oldFull := strings.Join([]string{file.PurgePath, file.PurgeName, ".", file.PurgeExt}, "")
-			newFull := strings.Join([]string{file.PurgePath, nName, ".", file.PurgeExt}, "")
-			slog.Info("summarize", slog.String("旧文件名", oldFull), slog.String("新文件名", newFull))
-			err := os.Rename(oldFull, newFull)
+		if strings.Contains(file, ".jpg.avif") {
+			slog.Debug(fmt.Sprintf("文件信息: %+v", file))
+			fresh := strings.Replace(file, ".jpg.avif", ".avif", 1)
+			slog.Debug(fmt.Sprintf("新文件名: %+v", fresh))
+			err := os.Rename(file, fresh)
 			if err != nil {
-				continue
+				slog.Warn("重命名失败")
+			} else {
+				slog.Debug("重命名成功")
 			}
 		}
 	}
+}
 
+func getFiles(folderPath string) ([]string, error) {
+	var files []string
+
+	err := filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() {
+			files = append(files, path)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
 }
 
 /*
